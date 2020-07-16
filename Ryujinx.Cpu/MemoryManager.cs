@@ -132,6 +132,32 @@ namespace Ryujinx.Cpu
 
             MarkRegionAsModified(va, (ulong)data.Length);
 
+            WriteImpl(va, data);
+        }
+
+        /// <summary>
+        /// Writes data to CPU mapped memory, without tracking.
+        /// </summary>
+        /// <param name="va">Virtual address to write the data into</param>
+        /// <param name="data">Data to be written</param>
+        public void WriteUntracked(ulong va, ReadOnlySpan<byte> data)
+        {
+            if (data.Length == 0)
+            {
+                return;
+            }
+
+            WriteImpl(va, data);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        /// <summary>
+        /// Writes data to CPU mapped memory.
+        /// </summary>
+        /// <param name="va">Virtual address to write the data into</param>
+        /// <param name="data">Data to be written</param>
+        private void WriteImpl(ulong va, ReadOnlySpan<byte> data)
+        {
             if (IsContiguous(va, data.Length))
             {
                 data.CopyTo(_backingMemory.GetSpan(GetPhysicalAddressInternal(va), data.Length));
