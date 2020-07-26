@@ -108,20 +108,6 @@ namespace Ryujinx.Graphics.Gpu.Engine
         }
 
         /// <summary>
-        /// Register callback for Fifo method calls that triggers an action on the GPFIFO.
-        /// </summary>
-        /// <param name="state">GPU state where the triggers will be registered</param>
-        public void RegisterCallbacksForFifo(GpuState state)
-        {
-            state.RegisterCallback(MethodOffset.Semaphore,              Semaphore);
-            state.RegisterCallback(MethodOffset.FenceAction,            FenceAction);
-            state.RegisterCallback(MethodOffset.WaitForIdle,            WaitForIdle);
-            state.RegisterCallback(MethodOffset.SendMacroCodeData,      SendMacroCodeData);
-            state.RegisterCallback(MethodOffset.BindMacro,              BindMacro);
-            state.RegisterCallback(MethodOffset.SetMmeShadowRamControl, SetMmeShadowRamControl);
-        }
-
-        /// <summary>
         /// Updates host state based on the current guest GPU state.
         /// </summary>
         /// <param name="state">Guest GPU state</param>
@@ -225,9 +211,12 @@ namespace Ryujinx.Graphics.Gpu.Engine
                 UpdateVertexAttribState(state);
             }
 
-            if (state.QueryModified(MethodOffset.PointSize))
+            if (state.QueryModified(MethodOffset.PointSize,
+                                    MethodOffset.VertexProgramPointSize,
+                                    MethodOffset.PointSpriteEnable,
+                                    MethodOffset.PointCoordReplace))
             {
-                UpdatePointSizeState(state);
+                UpdatePointState(state);
             }
 
             if (state.QueryModified(MethodOffset.PrimitiveRestartState))
@@ -704,11 +693,16 @@ namespace Ryujinx.Graphics.Gpu.Engine
         /// Updates host point size based on guest GPU state.
         /// </summary>
         /// <param name="state">Current GPU state</param>
-        private void UpdatePointSizeState(GpuState state)
+        private void UpdatePointState(GpuState state)
         {
             float size = state.Get<float>(MethodOffset.PointSize);
+            bool isProgramPointSize = state.Get<Boolean32>(MethodOffset.VertexProgramPointSize);
+            bool enablePointSprite = state.Get<Boolean32>(MethodOffset.PointSpriteEnable);
+            
+            // TODO: Need to figure out a way to map PointCoordReplace enable bit.
+            Origin origin = (state.Get<int>(MethodOffset.PointCoordReplace) & 4) == 0 ? Origin.LowerLeft : Origin.UpperLeft;
 
-            _context.Renderer.Pipeline.SetPointSize(size);
+            _context.Renderer.Pipeline.SetPointParameters(size, isProgramPointSize, enablePointSprite, origin);
         }
 
         /// <summary>
