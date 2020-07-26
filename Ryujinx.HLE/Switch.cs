@@ -153,7 +153,9 @@ namespace Ryujinx.HLE
 
         public void ProcessFrame()
         {
-            Gpu.GPFifo.DispatchCalls();
+            Gpu.Renderer.PreFrame();
+
+            Gpu.DmaPusher.DispatchCalls();
         }
 
         public void PresentFrame(Action swapBuffersCallback)
